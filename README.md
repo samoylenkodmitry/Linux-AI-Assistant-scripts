@@ -1,30 +1,30 @@
 # Linux-AI-Assistant-scripts
-This is my custom scripts to use Whisper / OpenAI by keyboard shortcuts and voice input.
+These are my custom scripts used to interact with Whisper / OpenAI through keyboard shortcuts and voice input.
 
-I am using ArchLinux, xfce Keyboard setting to do the binding.
+I am using ArchLinux and the xfce Keyboard settings for key bindings.
 
 ## Listen to me
-`voice.sh` to `F2` - activates the voice recording. After it is stopped by the other script, it sends a `wav` file to the `whisper.cpp`
+`voice.sh` bound to `F2` - activates voice recording. Once stopped by the other script, it sends a `wav` file to `whisper.cpp`.
 
-`stop_voice.py` to `F4` - stops the voice recording (by using Linux pipe)
+`stop_voice.py` bound to `F4` - stops voice recording (uses Linux pipe).
 
-`voice_tr.sh` to `F3` - same voice recording, but with more capabale model. I use it for translations.
+`voice_tr.sh` bound to `F3` - same voice recording, but with a more capable model. Used for translations.
 
 This is how it works for me: 
 ![voice](https://github.com/samoylenkodmitry/Linux-AI-Assistant-scripts/assets/2128250/92d269e3-fd73-4c28-9370-0097bc0a9673)
 
 ## Answer to me
 
-`process_clipboard.sh` to `F1` - sends the current selected text to ChatGPT [aichat project](https://github.com/sigoden/aichat)
+`process_clipboard.sh` bound to `F1` - sends the currently selected text to the ChatGPT [aichat project](https://github.com/sigoden/aichat).
 
 This is how it works:
 ![selected_text](https://github.com/samoylenkodmitry/Linux-AI-Assistant-scripts/assets/2128250/620b34ff-3439-4348-90d4-422c9d237523)
 
-`notify_history.sh` this is just for reading the notification history, because all the output got here. I bind it to shortcut in a tray.
+`notify_history.sh` is used to read the notification history. It is bound to a shortcut in the system tray.
 
 ## You will need to install
 
-`aichat` - as said before
+`aichat` - as mentioned previously
 
 `dunst`, `zenity` - for notifications 
 
