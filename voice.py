@@ -125,7 +125,13 @@ def recognize_and_copy_to_memory(audio_filename, model_type):
 def main():
     if not os.path.exists(FIFO_PATH):
         os.mkfifo(FIFO_PATH)
-
+    else:
+        print(f"Named pipe {FIFO_PATH} already exists.")
+        with open(FIFO_PATH, 'w') as fifo:
+            fifo.write('stop')
+        os.remove(FIFO_PATH)
+        notify_user("Stopped recording.")
+        exit(0)
     # Check if there are any command-line arguments
     print(f"Command-line arguments: {sys.argv}")
     if len(sys.argv) > 1:
