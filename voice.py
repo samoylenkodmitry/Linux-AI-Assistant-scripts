@@ -8,11 +8,16 @@ import os
 import threading
 import sys
 import psutil
+import atexit
 
-
+print("Starting... 0")
 FIFO_PATH = "/tmp/stop_recording_signal"
+LOCK_FILE_PATH = "/tmp/voice_lock_file"
+print("Starting... 1")
 sys.stdout = open('script_log.txt', 'w')
+print("Starting... 2")
 sys.stderr = open('script_error.txt', 'w')
+print("Starting... 3")
 
 def notify_user(message):
     """Send a notification to the user."""
@@ -46,6 +51,14 @@ def record_until_signal(samplerate=16000):
         about_to_stop = False
         total_bytes_recorded = 0
         while about_to_stop is False:
+            # if no lock file, exit early
+            if not os.path.exists(LOCK_FILE_PATH):
+                print("Lock file not found. Exiting.")
+                notify_user("Lock file not found. Exiting.")
+                exit(0)
+            # if there is no pipe, stop recording
+            if not os.path.exists(FIFO_PATH):
+                about_to_stop = True
             if stop_signal_received.is_set():
                 about_to_stop = True
             audio_chunk, overflowed = stream.read(samplerate)
@@ -94,21 +107,21 @@ def recognize_and_copy_to_memory(audio_filename, model_type):
     whisper_path = get_whisper_path()
     if not whisper_path:
         print("Could not find the path to 'whisper'")
-        whisper_path = "/home/s/.local/bin/whisper" # you need to change this for your installation path
+        whisper_path = "/home/s/.local/bin/whisper"
 
-    #cmd = [whisper_path, audio_filename, "--output_format", "txt", "--verbose", "False"] # uncomment to use OpenAI whisper
+    #cmd = [whisper_path, audio_filename, "--output_format", "txt", "--verbose", "False"]
     model_filename = f"/media/huge/whisper/whisper.cpp/models/ggml-{model_type}.bin"
     print(f"Using model: {model_filename}")
-    cmd = ["/media/huge/whisper/whisper.cpp/main", "-f", audio_filename, "-m", model_filename, "-otxt"] # this is where my whisper.cpp 
+    cmd = ["/media/huge/whisper/whisper.cpp/main", "-f", audio_filename, "-m", model_filename, "-otxt"]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print("Error during transcription.")
         return
-    #base_name = os.path.splitext(audio_filename)[0]  # uncomment to use OpenAI whisper
-    txt_output_filename = f"{audio_filename}.txt"
-    # Construct the path to the TXT result file
-    #txt_output_filename = f"{base_name}.txt" # uncomment to use OpenAI whisper
+    #base_name = os.path.splitext(audio_filename)[0]
 
+    # Construct the path to the TXT result file
+    #txt_output_filename = f"{base_name}.txt"
+    txt_output_filename = f"{audio_filename}.txt"
 
     with open(txt_output_filename, 'r') as f:
         recognized_text = f.read().strip()
@@ -123,7 +136,12 @@ def recognize_and_copy_to_memory(audio_filename, model_type):
     notify_user(recognized_text)
 
 def main():
+    print("Starting... 4")
     if not os.path.exists(FIFO_PATH):
+        if os.path.exists(LOCK_FILE_PATH):
+            print(f"Lock file {LOCK_FILE_PATH} already exists.")
+            notify_user("Already running. Remove the lock file if you want to run another instance. File: " + LOCK_FILE_PATH)
+            exit(0)
         os.mkfifo(FIFO_PATH)
     else:
         print(f"Named pipe {FIFO_PATH} already exists.")
@@ -132,6 +150,21 @@ def main():
         os.remove(FIFO_PATH)
         notify_user("Stopped recording.")
         exit(0)
+
+    print("Starting... 5")
+    # let's write some lock file and remove it on exit
+    # if lock file exists, then exit
+    if os.path.exists(LOCK_FILE_PATH):
+        print(f"Lock file {LOCK_FILE_PATH} already exists.")
+        notify_user("Already running. Remove the lock file if you want to run another instance. File: " + LOCK_FILE_PATH)
+        exit(0)
+
+    print(f"Lock file {LOCK_FILE_PATH} does not exist. Creating...")
+    lock_file = open(LOCK_FILE_PATH, 'w')
+    lock_file.write("1")
+    lock_file.close()
+    print(f"Lock file {LOCK_FILE_PATH} created.")
+
     # Check if there are any command-line arguments
     print(f"Command-line arguments: {sys.argv}")
     if len(sys.argv) > 1:
@@ -144,6 +177,7 @@ def main():
         print(f"Audio saved as {audio_filename}. Size: {len(audio_data) * 2} bytes.")
         recognize_and_copy_to_memory(audio_filename, model_type)
     finally:
+        os.remove(LOCK_FILE_PATH)
         os.remove(FIFO_PATH)
 
 if __name__ == "__main__":
